@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal Human State Modeling</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: #000;
+            color: #f5f5f7;
+            overflow-x: hidden;
+        }
+
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 60px;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide.alt {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .slide-number {
+            position: absolute;
+            top: 40px;
+            right: 60px;
+            font-size: 14px;
+            opacity: 0.5;
+            font-weight: 600;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 16px 24px;
+            border-radius: 50px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f5f5f7;
+            padding: 14px 28px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: rgba(0, 122, 255, 0.8);
+            border-color: #007aff;
+            transform: scale(1.05);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .slide-indicator {
+            color: #f5f5f7;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+        }
+
+        h1 {
+            font-size: clamp(48px, 8vw, 96px);
+            font-weight: 700;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #f5f5f7 0%, #999 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .alt h1 {
+            background: linear-gradient(135deg, #1d1d1f 0%, #666 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: clamp(36px, 5vw, 64px);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .subtitle {
+            font-size: clamp(18px, 2vw, 28px);
+            font-weight: 400;
+            opacity: 0.8;
+            text-align: center;
+            max-width: 1000px;
+            line-height: 1.5;
+            margin: 20px 0;
+        }
+
+        .description {
+            font-size: clamp(16px, 1.8vw, 22px);
+            line-height: 1.6;
+            opacity: 0.75;
+            text-align: center;
+            max-width: 900px;
+            margin: 20px auto;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            width: 100%;
+            margin-top: 50px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            transition: all 0.4s ease;
+            text-align: left;
+        }
+
+        .alt .card {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(0, 122, 255, 0.5);
+            box-shadow: 0 20px 60px rgba(0, 122, 255, 0.2);
+        }
+
+        .card h3 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #007aff;
+        }
+
+        .card p, .card ul {
+            font-size: 17px;
+            line-height: 1.7;
+            opacity: 0.85;
+        }
+
+        .card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .card ul li {
+            margin-bottom: 12px;
+            padding-left: 24px;
+            position: relative;
+        }
+
+        .card ul li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #007aff;
+            font-weight: 700;
+            font-size: 24px;
+        }
+
+        .feature-list {
+            list-style: none;
+            max-width: 900px;
+            text-align: left;
+            margin-top: 40px;
+        }
+
+        .feature-list li {
+            font-size: clamp(17px, 1.8vw, 22px);
+            line-height: 1.7;
+            margin-bottom: 28px;
+            padding-left: 40px;
+            position: relative;
+            opacity: 0;
+            animation: slideIn 0.6s ease forwards;
+        }
+
+        .feature-list li:nth-child(1) { animation-delay: 0.1s; }
+        .feature-list li:nth-child(2) { animation-delay: 0.2s; }
+        .feature-list li:nth-child(3) { animation-delay: 0.3s; }
+        .feature-list li:nth-child(4) { animation-delay: 0.4s; }
+        .feature-list li:nth-child(5) { animation-delay: 0.5s; }
+        .feature-list li:nth-child(6) { animation-delay: 0.6s; }
+        .feature-list li:nth-child(7) { animation-delay: 0.7s; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .feature-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #007aff;
+            font-weight: 700;
+            font-size: 28px;
+        }
+
+        .hero-accent {
+            font-size: clamp(14px, 1.3vw, 18px);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            opacity: 0.6;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-top: 50px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: clamp(48px, 6vw, 72px);
+            font-weight: 700;
+            color: #007aff;
+            line-height: 1;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            font-size: 16px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .highlight {
+            color: #007aff;
+            font-weight: 600;
+        }
+
+        .tech-badge {
+            display: inline-block;
+            background: rgba(0, 122, 255, 0.1);
+            border: 1px solid rgba(0, 122, 255, 0.3);
+            color: #007aff;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            margin: 8px;
+        }
+
+        .presenter {
+            margin-top: 50px;
+            font-size: 22px;
+            opacity: 0.6;
+        }
+
+        .architecture-flow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-top: 50px;
+            flex-wrap: wrap;
+        }
+
+        .flow-item {
+            background: rgba(0, 122, 255, 0.1);
+            border: 2px solid rgba(0, 122, 255, 0.3);
+            border-radius: 16px;
+            padding: 28px 36px;
+            font-size: 19px;
+            font-weight: 600;
+            color: #007aff;
+            text-align: center;
+        }
+
+        .flow-arrow {
+            font-size: 32px;
+            color: #007aff;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            max-width: 1400px;
+            width: 100%;
+            margin-top: 50px;
+            align-items: start;
+        }
+
+        .column-content {
+            text-align: left;
+        }
+
+        .column-content h3 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #007aff;
+        }
+
+        .column-content p {
+            font-size: 18px;
+            line-height: 1.7;
+            opacity: 0.85;
+            margin-bottom: 16px;
+        }
+
+        .alt .column-content h3 {
+            color: #1d1d1f;
+        }
+
+        .process-box {
+            background: rgba(0, 122, 255, 0.08);
+            border-left: 4px solid #007aff;
+            padding: 24px 28px;
+            margin: 20px 0;
+            border-radius: 12px;
+        }
+
+        .process-box h4 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #007aff;
+        }
+
+        .process-box p {
+            font-size: 17px;
+            line-height: 1.6;
+            opacity: 0.85;
+        }
+
+        @media (max-width: 1024px) {
+            .two-column {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 60px 30px;
+            }
+            
+            .navigation {
+                bottom: 20px;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .stats-container {
+                gap: 40px;
+            }
+        }
+
+        .logo-area {
+            position: absolute;
+            top: 40px;
+            left: 60px;
+            font-size: 24px;
+            font-weight: 700;
+            opacity: 0.3;
+        }
+
+        .metric-badge {
+            display: inline-block;
+            background: rgba(0, 122, 255, 0.15);
+            padding: 6px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #007aff;
+            margin: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-area">◉</div>
+    
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="previousSlide()">← Previous</button>
+        <div class="slide-indicator">
+            <span id="currentSlideNum">1</span> / <span id="totalSlideNum">38</span>
+        </div>
+        <button class="nav-btn" id="nextBtn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <!-- Slide 1: Title -->
+    <div class="slide" id="slide1">
+        <div class="slide-number">01</div>
+        <div class="hero-accent">BIG DATA MANAGEMENT PROJECT</div>
+        <h1>Multimodal Human<br>State Modeling</h1>
+        <p class="subtitle">Through Integrated Physiology, Screen-Use Behavior,<br>and Environmental Signals</p>
+        <p class="description">A comprehensive study fusing wearable biosignals, digital behavior patterns, and real-time weather data through advanced deep learning architectures</p>
+        <div style="margin-top: 40px;">
+            <span class="tech-badge">Apple Health Export</span>
+            <span class="tech-badge">RouteSense Network Analysis</span>
+            <span class="tech-badge">Open-Meteo Weather API</span>
+            <span class="tech-badge">EXO-Hypermind Framework</span>
+        </div>
+        <p class="presenter">Presented by Chintan N. Ruparel</p>
+    </div>
+
+    <!-- Slide 2: Introduction -->
+    <div class="slide alt" id="slide2">
+        <div class="slide-number">02</div>
+        <h2>The Modern Human Data Landscape</h2>
+        <p class="subtitle">Life at the intersection of biology, digital behavior, and environment</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>The Data Revolution</h3>
+                <p>Wearables continuously monitor physiological variables. Smartphones track behavioral and cognitive rhythms. Environmental sensors characterize the conditions we inhabit.</p>
+                <p>When integrated, these signals form a rich landscape for understanding personal health, behavior, productivity, and lifestyle dynamics.</p>
+            </div>
+            <div class="column-content">
+                <h3>Our Approach</h3>
+                <p>This project proposes a comprehensive multimodal fusion pipeline for minute-level human state modeling.</p>
+                <p>We create a unified dataset capturing the interplay among physiology, behavior, and environment—then apply deep learning to extract predictive structure.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Four Pillars of Motivation -->
+    <div class="slide" id="slide3">
+        <div class="slide-number">03</div>
+        <h2>Motivation</h2>
+        <p class="subtitle">Why multimodal human state modeling matters</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>1. Personal Health Data Explosion</h3>
+                <p>Modern devices continuously generate physiological data: heart rate, respiratory rate, step count, energy expenditure, sleep states.</p>
+                <p style="margin-top: 12px;">However, such data remains underutilized unless connected to behavioral and environmental contexts.</p>
+            </div>
+            <div class="card">
+                <h3>2. Behavioral Proxies</h3>
+                <p>Screen-time at minute-level resolution is strongly associated with stress, attention switching, sleep disruption, and general behavioral rhythms.</p>
+                <p style="margin-top: 12px;">RouteSense allows approximation of screen activity without direct OS-level access.</p>
+            </div>
+            <div class="card">
+                <h3>3. Environmental Conditioning</h3>
+                <p>Weather has meaningful effects on fatigue, heart rate, focus, and motivation.</p>
+                <p style="margin-top: 12px;">Temperature and humidity subtly shape physiology and decision-making throughout the day.</p>
+            </div>
+            <div class="card">
+                <h3>4. Predictive & Interpretive Tools</h3>
+                <p>Building models on integrated data enables early anomaly detection, behavioral stressor identification, environmental sensitivity mapping.</p>
+                <p style="margin-top: 12px;">EXO-Hypermind quantifies physiological predictability under real-world context.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: Data Acquisition Overview -->
+    <div class="slide alt" id="slide4">
+        <div class="slide-number">04</div>
+        <h2>Data Acquisition Pipeline</h2>
+        <p class="subtitle">Three independent data streams unified into a single timeline</p>
+        <div class="architecture-flow">
+            <div class="flow-item">Apple Health<br><small>XML + GPX Export</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-item">RouteSense<br><small>Network Handshakes</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-item">Open-Meteo<br><small>Hourly Weather API</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-item">Unified Dataset<br><small>Minute Resolution</small></div>
+        </div>
+        <p class="description" style="margin-top: 50px;">Each data source presents unique challenges in sampling frequency, format structure, and temporal alignment. Our pipeline handles parsing, normalization, interpolation, and synchronization.</p>
+    </div>
+
+    <!-- Slide 5: Apple Health - Export Structure -->
+    <div class="slide" id="slide5">
+        <div class="slide-number">05</div>
+        <h2>Apple Health Data Export</h2>
+        <p class="subtitle">Structured health data from iOS devices</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>Export Structure</h3>
+                <p>Apple Health provides an export mechanism packaging user health data into:</p>
+                <ul style="list-style: none; padding: 0; margin-top: 16px;">
+                    <li style="margin-bottom: 12px; padding-left: 24px; position: relative;">
+                        <span style="position: absolute; left: 0; color: #007aff; font-weight: 700;">▸</span>
+                        <strong>export.xml</strong> — central repository of all logged samples
+                    </li>
+                    <li style="padding-left: 24px; position: relative;">
+                        <span style="position: absolute; left: 0; color: #007aff; font-weight: 700;">▸</span>
+                        <strong>Multiple GPX files</strong> — representing workout sessions
+                    </li>
+                </ul>
+                <p style="margin-top: 20px;">The XML file stores timestamped entries with irregular sampling frequencies. Some signals appear multiple times per minute, while others span coarse interval segments.</p>
+            </div>
+            <div class="column-content">
+                <h3>Metrics Captured</h3>
+                <div style="margin-top: 16px;">
+                    <span class="metric-badge">Heart Rate</span>
+                    <span class="metric-badge">HRV</span>
+                    <span class="metric-badge">Respiratory Rate</span>
+                    <span class="metric-badge">Active Energy</span>
+                    <span class="metric-badge">Resting Energy</span>
+                    <span class="metric-badge">Sleep Stages</span>
+                    <span class="metric-badge">Step Count</span>
+                    <span class="metric-badge">VO₂ Max</span>
+                    <span class="metric-badge">Walking Asymmetry</span>
+                    <span class="metric-badge">Noise Exposure</span>
+                </div>
+                <p style="margin-top: 24px;">36 fully synchronized physiological metrics after processing</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Apple Health - Processing Challenges -->
+    <div class="slide alt" id="slide6">
+        <div class="slide-number">06</div>
+        <h2>Apple Health Processing Challenges</h2>
+        <p class="subtitle">Reconciling irregular, sparse, and asynchronous physiological data</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Irregular Sampling</h3>
+                <p>Values are not recorded uniformly. Heart rate may appear multiple times per minute, while sleep stages span hours.</p>
+                <p style="margin-top: 12px;">Required careful timestamp normalization to minute boundaries.</p>
+            </div>
+            <div class="card">
+                <h3>Sparse Metrics</h3>
+                <p>Energy metrics update only during specific activities. VO₂ Max appears infrequently.</p>
+                <p style="margin-top: 12px;">Implemented forward-fill and minimal interpolation strategies.</p>
+            </div>
+            <div class="card">
+                <h3>Sleep Intervals</h3>
+                <p>Sleep exists as intervals, not per-minute samples. Stages transition at irregular times.</p>
+                <p style="margin-top: 12px;">Required interval-to-minute conversion logic.</p>
+            </div>
+            <div class="card">
+                <h3>Workout Redundancy</h3>
+                <p>GPX workout data may provide redundant timestamps that conflict with XML records.</p>
+                <p style="margin-top: 12px;">Deduplication and priority rules established.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 7: Apple Health - Processing Pipeline -->
+    <div class="slide" id="slide7">
+        <div class="slide-number">07</div>
+        <h2>Apple Health Processing Pipeline</h2>
+        <p class="subtitle">From raw XML to minute-synchronized Pandas DataFrame</p>
+        <ul class="feature-list">
+            <li>Parse XML structure and extract each metric into a Pandas table</li>
+            <li>Normalize all timestamps to the minute boundary (floor operation)</li>
+            <li>Merge all metrics into a single table indexed by minute</li>
+            <li>Apply forward-fill for missing values where appropriate</li>
+            <li>Ensure consistent alignment across all 36 metrics for downstream modeling</li>
+            <li>Validate data integrity through statistical profiling and visual inspection</li>
+        </ul>
+        <p class="description" style="margin-top: 40px;">Result: A comprehensive minute-wise Apple Health dataset with complete temporal coverage and no alignment drift</p>
+    </div>
+
+    <!-- Slide 8: RouteSense Introduction -->
+    <div class="slide alt" id="slide8">
+        <div class="slide-number">08</div>
+        <h2>RouteSense Screen-Time Inference</h2>
+        <p class="subtitle">Behavioral modality without OS-level access</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>The Challenge</h3>
+                <p>Traditional screen-time tracking requires OS-level permissions and integration. This creates privacy concerns and platform limitations.</p>
+                <p style="margin-top: 16px;"><strong>RouteSense Solution:</strong> Infer screen activity from network handshake patterns—an indirect but powerful method.</p>
+            </div>
+            <div class="column-content">
+                <h3>The Method</h3>
+                <p>When users actively interact with applications (messaging, browsing, social media, streaming), devices generate outbound packet bursts.</p>
+                <p style="margin-top: 16px;"><strong>Key Observation:</strong> Passive background activity is low-volume. Active interaction correlates with >1MB/min network bursts.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 9: RouteSense Algorithm -->
+    <div class="slide" id="slide9">
+        <div class="slide-number">09</div>
+        <h2>RouteSense Detection Algorithm</h2>
+        <p class="subtitle">Transforming network patterns into behavioral signals</p>
+        <div class="process-box">
+            <h4>Binary Classification Heuristic</h4>
+            <p><strong>screen_on(t) = 1</strong> if <strong>upload_byte_count(t) > 1000 KB</strong></p>
+            <p style="margin-top: 12px;">This creates a minute-level binary time series representing behavioral engagement intensity.</p>
+        </div>
+        <div class="two-column" style="margin-top: 40px;">
+            <div class="column-content">
+                <h3>Advantages</h3>
+                <ul>
+                    <li>OS-agnostic and privacy-preserving</li>
+                    <li>Fine temporal resolution (per minute)</li>
+                    <li>Reflects real behavioral intensity</li>
+                    <li>Captures WhatsApp, browsing, content consumption</li>
+                </ul>
+            </div>
+            <div class="column-content">
+                <h3>Limitations & Validation</h3>
+                <ul>
+                    <li>Network bursts may occur without explicit screen use</li>
+                    <li>Some apps use background data</li>
+                    <li>Threshold requires empirical validation</li>
+                    <li>Cross-validated against manual screen logs</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 10: RouteSense Value -->
+    <div class="slide alt" id="slide10">
+        <div class="slide-number">10</div>
+        <h2>RouteSense Behavioral Insights</h2>
+        <p class="subtitle">Screen activity as a window into cognitive and emotional states</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Stress Patterns</h3>
+                <p>Elevated screen usage during late hours correlates with stress and anxiety markers in physiological data.</p>
+            </div>
+            <div class="card">
+                <h3>Attention Switching</h3>
+                <p>Rapid on-off patterns indicate cognitive fragmentation and multitasking behavior.</p>
+            </div>
+            <div class="card">
+                <h3>Sleep Disruption</h3>
+                <p>Pre-bedtime screen activity strongly predicts delayed sleep onset and reduced sleep quality.</p>
+            </div>
+            <div class="card">
+                <h3>Cognitive Load</h3>
+                <p>Sustained screen engagement reflects high cognitive demand periods throughout the workday.</p>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 40px;">RouteSense provides the <span class="highlight">behavioral complement to physiological data</span>, enabling context-aware modeling of human state</p>
+    </div>
+
+    <!-- Slide 11: Weather Data Integration -->
+    <div class="slide" id="slide11">
+        <div class="slide-number">11</div>
+        <h2>Weather Data via Open-Meteo</h2>
+        <p class="subtitle">Environmental context layer for physiological interpretation</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>Data Source</h3>
+                <p>Open-Meteo provides free, high-quality environmental data through a robust API.</p>
+                <p style="margin-top: 16px;"><strong>Raw Collection:</strong> Hourly resolution</p>
+                <p><strong>Processing:</strong> Linear interpolation to minute-level for timeline synchronization</p>
+            </div>
+            <div class="column-content">
+                <h3>Parameters Collected</h3>
+                <div style="margin-top: 16px;">
+                    <span class="metric-badge">Temperature</span>
+                    <span class="metric-badge">Feels-Like Temp</span>
+                    <span class="metric-badge">Humidity</span>
+                    <span class="metric-badge">Rainfall</span>
+                    <span class="metric-badge">Wind Speed</span>
+                </div>
+                <p style="margin-top: 24px;">5 environmental variables fully synchronized with physiological and behavioral timelines</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 12: Weather Influence -->
+    <div class="slide alt" id="slide12">
+        <div class="slide-number">12</div>
+        <h2>Weather's Impact on Human Physiology</h2>
+        <p class="subtitle">Environmental conditioning shapes our biological and behavioral patterns</p>
+        <ul class="feature-list">
+            <li><strong>Heart Rate & Respiratory Rate:</strong> Temperature extremes and humidity increase cardiovascular and respiratory load</li>
+            <li><strong>Mood & Stress:</strong> Barometric pressure changes and gloomy weather correlate with emotional state shifts</li>
+            <li><strong>Sleep Quality:</strong> Temperature, humidity, and precipitation affect sleep architecture and recovery</li>
+            <li><strong>Physical Performance:</strong> Heat, cold, and wind impact exercise capacity and energy expenditure</li>
+            <li><strong>Cognitive Function:</strong> Weather influences alertness, decision-making, and productivity</li>
+        </ul>
+        <p class="description" style="margin-top: 40px;">Having weather aligned per minute enables time-series modeling with fully synchronized multimodal inputs</p>
+    </div>
+
+    <!-- Slide 13: Unified Timeline -->
+    <div class="slide" id="slide13">
+        <div class="slide-number">13</div>
+        <h2>Unified Timeline Construction</h2>
+        <p class="subtitle">Complete minute-by-minute dataset with zero gaps</p>
+        <div class="stats-container">
+            <div class="stat">
+                <div class="stat-number">Oct 17</div>
+                <div class="stat-label">Start Date</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">→</div>
+                <div class="stat-label" style="opacity: 0.5;">35 Days</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">Nov 20</div>
+                <div class="stat-label">End Date</div>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 50px;">Timeline: <strong>2025-10-17 00:00</strong> to <strong>2025-11-20 15:36 EST</strong></p>
+        <p class="description">All three datasets merged by timestamp into a single dataframe with <span class="highlight">no missing minutes</span></p>
+        <div class="stats-container" style="margin-top: 50px;">
+            <div class="stat">
+                <div class="stat-number">36</div>
+                <div class="stat-label">Apple Health Metrics</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Weather Variables</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">2</div>
+                <div class="stat-label">Behavioral Features</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">20+</div>
+                <div class="stat-label">Engineered Features</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 14: Dataset Composition -->
+    <div class="slide alt" id="slide14">
+        <div class="slide-number">14</div>
+        <h2>Final Dataset Composition</h2>
+        <p class="subtitle">A rich multimodal foundation for predictive modeling</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Physiological Core</h3>
+                <p><strong>36 Apple Health Metrics:</strong></p>
+                <ul>
+                    <li>Heart rate (min/max/avg)</li>
+                    <li>Heart rate variability (HRV)</li>
+                    <li>Resting heart rate</li>
+                    <li>Respiratory rate</li>
+                    <li>Sleep stages and duration</li>
+                    <li>VO₂ Max estimates</li>
+                    <li>Step counts and asymmetry</li>
+                    <li>Active & resting energy</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Behavioral Layer</h3>
+                <p><strong>RouteSense Metrics:</strong></p>
+                <ul>
+                    <li>Upload byte count per minute</li>
+                    <li>Binary screen-on indicator</li>
+                    <li>Screen streak durations</li>
+                    <li>Daily engagement patterns</li>
+                </ul>
+                <p style="margin-top: 20px;">Reflects attention, cognitive load, stress, and digital engagement rhythms</p>
+            </div>
+            <div class="card">
+                <h3>Environmental Context</h3>
+                <p><strong>5 Weather Variables:</strong></p>
+                <ul>
+                    <li>Temperature (actual & feels-like)</li>
+                    <li>Relative humidity</li>
+                    <li>Precipitation levels</li>
+                    <li>Wind speed</li>
+                </ul>
+                <p style="margin-top: 20px;">Contextualizes physiological fluctuations with external conditions</p>
+            </div>
+            <div class="card">
+                <h3>Engineered Features</h3>
+                <p><strong>20+ Derived Variables:</strong></p>
+                <ul>
+                    <li>Temporal encoding</li>
+                    <li>Rolling statistics</li>
+                    <li>Activity windows</li>
+                    <li>Weather deltas</li>
+                    <li>Lagged sleep measures</li>
+                </ul>
+                <p style="margin-top: 20px;">Boosts model expressiveness and captures human behavioral structure</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 15: Feature Engineering Deep Dive -->
+    <div class="slide" id="slide15">
+        <div class="slide-number">15</div>
+        <h2>Feature Engineering Strategy</h2>
+        <p class="subtitle">Expanding the feature space for richer predictive power</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>Temporal Encoding</h3>
+                <p>Hour of day, day of week, weekend indicator—captures circadian and weekly rhythms</p>
+                <h3 style="margin-top: 24px;">HR Dynamics</h3>
+                <p>Rolling mean and standard deviation of heart rate over 15, 30, 60-minute windows</p>
+                <h3 style="margin-top: 24px;">Screen Streaks</h3>
+                <p>Consecutive screen-on minutes, capturing sustained vs intermittent engagement</p>
+            </div>
+            <div class="column-content">
+                <h3>Activity Windows</h3>
+                <p>Step count and movement aggregates over sliding windows</p>
+                <h3 style="margin-top: 24px;">Weather Deltas</h3>
+                <p>Minute-to-minute temperature and humidity changes for sensitivity detection</p>
+                <h3 style="margin-top: 24px;">Lagged Sleep</h3>
+                <p>Previous night's sleep duration and quality affecting current state</p>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 50px;">These engineered features <span class="highlight">significantly boost predictive performance</span> by providing models with temporal context and behavioral structure</p>
+    </div>
+
+    <!-- Slide 16: LSTM Model Introduction -->
+    <div class="slide alt" id="slide16">
+        <div class="slide-number">16</div>
+        <h2>LSTM Model Architecture</h2>
+        <p class="subtitle">Predicting next-minute average heart rate</p>
+        <div class="process-box">
+            <h4>Objective</h4>
+            <p>Predict the next-minute average heart rate using all fused multimodal and engineered features. This captures micro-trends in physiological response driven by behavior, environment, and recent activity.</p>
+        </div>
+        <div class="process-box" style="margin-top: 20px;">
+            <h4>Model Philosophy</h4>
+            <p>The LSTM architecture serves as a nonlinear pattern recognizer, temporal context synthesizer, and adaptive estimator for short-term cardiovascular trends. It learns to associate behavioral events (screen bursts) and environmental shifts (temperature changes) with immediate HR responses.</p>
+        </div>
+    </div>
+
+    <!-- Slide 17: LSTM Feature Expansion -->
+    <div class="slide" id="slide17">
+        <div class="slide-number">17</div>
+        <h2>LSTM Feature Expansion</h2>
+        <p class="subtitle">Enriching the input space before modeling</p>
+        <ul class="feature-list">
+            <li><strong>Polynomial Features:</strong> Squared and cubic transformations to capture non-linear relationships</li>
+            <li><strong>Noise Augmentation:</strong> Gaussian noise-perturbed replicas to improve robustness</li>
+            <li><strong>Rolling Statistics:</strong> Mean and variance of heart rate over multiple time windows</li>
+            <li><strong>Interaction Terms:</strong> Cross-products between screen activity, weather, and physiological variables</li>
+            <li><strong>Normalization:</strong> Z-score standardization across all features for stable training</li>
+        </ul>
+        <p class="description" style="margin-top: 40px;">This expansion increases model expressiveness <span class="highlight">without requiring explicit deep time windows</span>, allowing the network to learn complex patterns from enriched single-timestep inputs</p>
+    </div>
+
+    <!-- Slide 18: LSTM Architecture Detail -->
+    <div class="slide alt" id="slide18">
+        <div class="slide-number">18</div>
+        <h2>LSTM Network Architecture</h2>
+        <p class="subtitle">Dense feature processing → LSTM temporal modeling</p>
+        <div class="architecture-flow" style="flex-direction: column; gap: 20px;">
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Input Layer<br><small>Multimodal features + engineered variables</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Dense (512) + BatchNorm + Dropout<br><small>Feature smoothing and regularization</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Residual Dense Block<br><small>Deep representation learning</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Dense (512, swish activation)<br><small>Strong feature enrichment</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Reshape → LSTM (128 units)<br><small>Temporal dynamics capture</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Output Dense (1)<br><small>Next-minute HR prediction</small></div>
+        </div>
+    </div>
+
+    <!-- Slide 19: LSTM Training -->
+    <div class="slide" id="slide19">
+        <div class="slide-number">19</div>
+        <h2>LSTM Training Procedure</h2>
+        <p class="subtitle">Optimization strategy for physiological time-series</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Data Split</h3>
+                <p>80/20 chronological split to preserve temporal ordering and test on future unseen data</p>
+            </div>
+            <div class="card">
+                <h3>Loss Function</h3>
+                <p>Mean Squared Error (MSE) for regression, with Mean Absolute Error (MAE) for evaluation</p>
+            </div>
+            <div class="card">
+                <h3>Learning Rate Schedule</h3>
+                <p>Sinusoidal modulation for cyclic learning rates, improving convergence and generalization</p>
+            </div>
+            <div class="card">
+                <h3>Regularization</h3>
+                <p>Early stopping, dropout layers, batch normalization, and Gaussian noise injection</p>
+            </div>
+        </div>
+        <div class="stats-container" style="margin-top: 50px;">
+            <div class="stat">
+                <div class="stat-number">32</div>
+                <div class="stat-label">Batch Size</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">100</div>
+                <div class="stat-label">Max Epochs</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">Adam</div>
+                <div class="stat-label">Optimizer</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 20: LSTM Results -->
+    <div class="slide alt" id="slide20">
+        <div class="slide-number">20</div>
+        <h2>LSTM Model Results</h2>
+        <p class="subtitle">Learning micro-trends in cardiovascular response</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Screen-On Bursts</h3>
+                <p>Model detects HR elevation during sudden screen activity spikes, reflecting cognitive engagement and sympathetic activation</p>
+            </div>
+            <div class="card">
+                <h3>Sleep/Wake Transitions</h3>
+                <p>Accurately captures HR drops during sleep onset and gradual rises during wake periods</p>
+            </div>
+            <div class="card">
+                <h3>Physical Activity Spikes</h3>
+                <p>Responds to step count increases and movement with appropriate HR predictions</p>
+            </div>
+            <div class="card">
+                <h3>Weather-Driven Drift</h3>
+                <p>Identifies subtle HR baseline shifts correlated with temperature and humidity changes</p>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 50px;">The model achieves <span class="highlight">accurate short-term physiological forecasting</span>, successfully integrating behavioral events, environmental conditions, and recent physiological history</p>
+    </div>
+
+    <!-- Slide 21: Hybrid Model Introduction -->
+    <div class="slide" id="slide21">
+        <div class="slide-number">21</div>
+        <h2>Hybrid CNN + Transformer + LSTM</h2>
+        <p class="subtitle">Resting heart rate baseline prediction</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>Motivation</h3>
+                <p>Resting heart rate (RHR) is a powerful marker of stress, fatigue, recovery, sleep debt, and autonomic balance.</p>
+                <p style="margin-top: 16px;">Unlike instantaneous HR, RHR reflects longer-term physiological state and adaptation to lifestyle patterns.</p>
+            </div>
+            <div class="column-content">
+                <h3>Architecture Philosophy</h3>
+                <p>Predicting RHR from multimodal context requires understanding how behavior and environment shape physiological baseline.</p>
+                <p style="margin-top: 16px;">We combine three complementary representation systems for maximum expressiveness.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 22: Hybrid Architecture Components -->
+    <div class="slide alt" id="slide22">
+        <div class="slide-number">22</div>
+        <h2>Hybrid Model Architecture</h2>
+        <p class="subtitle">Three parallel representation systems</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>CNN Branch</h3>
+                <p><strong>Purpose:</strong> Structural feature extraction</p>
+                <p style="margin-top: 12px;">Convolutional layers detect local patterns and spatial relationships within the feature vector, identifying co-occurring physiological and behavioral signatures.</p>
+            </div>
+            <div class="card">
+                <h3>Transformer Branch</h3>
+                <p><strong>Purpose:</strong> Feature-wise relational attention</p>
+                <p style="margin-top: 12px;">Self-attention mechanisms capture dependencies between distant features, learning which variables influence RHR across the entire feature space.</p>
+            </div>
+            <div class="card">
+                <h3>LSTM Branch</h3>
+                <p><strong>Purpose:</strong> Implicit temporal structure</p>
+                <p style="margin-top: 12px;">Recurrent layers model temporal dependencies and sequential patterns, even with single-step sequences through learned state representations.</p>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 50px;">These three branches process the same input in parallel, each contributing unique perspectives on the data's structure</p>
+    </div>
+
+    <!-- Slide 23: Fusion Layer -->
+    <div class="slide" id="slide23">
+        <div class="slide-number">23</div>
+        <h2>Multi-Branch Fusion</h2>
+        <p class="subtitle">Combining complementary representations</p>
+        <div class="architecture-flow" style="flex-direction: column; gap: 20px;">
+            <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+                <div class="flow-item">CNN Output<br><small>Structural patterns</small></div>
+                <div class="flow-item">Transformer Output<br><small>Attention weights</small></div>
+                <div class="flow-item">LSTM Output<br><small>Temporal state</small></div>
+            </div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Concatenation Layer<br><small>Unified embedding space</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Dense Layers + Dropout<br><small>Final prediction head</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 600px; max-width: 90%;">Resting HR Prediction<br><small>Baseline physiological state</small></div>
+        </div>
+        <p class="description" style="margin-top: 50px;">The fusion layer learns to <span class="highlight">weight and combine insights</span> from all three representation systems for robust RHR estimation</p>
+    </div>
+
+    <!-- Slide 24: Hybrid Training -->
+    <div class="slide alt" id="slide24">
+        <div class="slide-number">24</div>
+        <h2>Hybrid Model Training</h2>
+        <p class="subtitle">Optimization for baseline physiological prediction</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>Training Strategy</h3>
+                <p>Unlike the LSTM model, the hybrid architecture is trained with <strong>shuffled samples</strong> rather than strict chronological ordering.</p>
+                <p style="margin-top: 16px;">This approach helps the model generalize across diverse contexts and prevents overfitting to temporal artifacts.</p>
+            </div>
+            <div class="column-content">
+                <h3>Generalization Focus</h3>
+                <p>The model learns to predict resting HR from <strong>contextual patterns</strong> rather than memorizing sequences.</p>
+                <p style="margin-top: 16px;">This makes it robust to variations in daily routines and behavioral patterns.</p>
+            </div>
+        </div>
+        <div class="stats-container" style="margin-top: 50px;">
+            <div class="stat">
+                <div class="stat-number">3</div>
+                <div class="stat-label">Parallel Branches</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">MSE</div>
+                <div class="stat-label">Loss Function</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">Early Stop</div>
+                <div class="stat-label">Regularization</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 25: Hybrid Results -->
+    <div class="slide" id="slide25">
+        <div class="slide-number">25</div>
+        <h2>Hybrid Model Results</h2>
+        <p class="subtitle">Capturing long-term physiological trends</p>
+        <ul class="feature-list">
+            <li><strong>Circadian Sensitivity:</strong> Model captures subtle RHR shifts aligned with circadian rhythms and time-of-day patterns</li>
+            <li><strong>Sleep Debt Accumulation:</strong> Recognizes how consecutive nights of poor sleep progressively elevate resting HR</li>
+            <li><strong>Behavior-Driven Changes:</strong> Identifies RHR baseline shifts caused by sustained screen activity or lifestyle changes</li>
+            <li><strong>Weather Stress Response:</strong> Detects environmental conditioning effects on autonomic balance</li>
+            <li><strong>Recovery Dynamics:</strong> Tracks RHR normalization following stressful periods or intense activity</li>
+        </ul>
+        <p class="description" style="margin-top: 40px;">The hybrid architecture proves particularly effective for <span class="highlight">wellness analytics and readiness scoring</span>, providing insights into long-term physiological state</p>
+    </div>
+
+    <!-- Slide 26: EXO-Hypermind Introduction -->
+    <div class="slide alt" id="slide26">
+        <div class="slide-number">26</div>
+        <div class="hero-accent">INTRODUCING</div>
+        <h1>EXO-Hypermind<br>Framework</h1>
+        <p class="subtitle">Quantifying the predictability of human physiology</p>
+        <div class="process-box" style="max-width: 900px; margin-top: 50px;">
+            <h4>The Central Question</h4>
+            <p style="font-size: 22px; line-height: 1.6;">"How predictable is your physiology under the interplay of behavior and environment?"</p>
+        </div>
+        <p class="description" style="margin-top: 40px;">Rather than predicting physiology directly, EXO-Hypermind evaluates <span class="highlight">system stability, irregularity, model surprise</span>, and context-driven fluctuations</p>
+    </div>
+
+    <!-- Slide 27: EXO Background -->
+    <div class="slide" id="slide27">
+        <div class="slide-number">27</div>
+        <h2>EXO-Hypermind Philosophy</h2>
+        <p class="subtitle">From prediction to stability assessment</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>Traditional Approach</h3>
+                <p>Conventional models predict future values: "What will your heart rate be?"</p>
+                <p style="margin-top: 16px;">This provides point estimates but limited interpretability about overall physiological coherence.</p>
+            </div>
+            <div class="column-content">
+                <h3>EXO-Hypermind Approach</h3>
+                <p>Instead asks: "How stable and predictable is your physiological system?"</p>
+                <p style="margin-top: 16px;">Transforms prediction error into a <strong>stability index</strong> that quantifies system coherence and irregularity.</p>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 50px;">This shift enables <span class="highlight">context-aware health readiness metrics</span> applicable across digital health, wellness analytics, and performance monitoring</p>
+    </div>
+
+    <!-- Slide 28: Composite Metrics -->
+    <div class="slide alt" id="slide28">
+        <div class="slide-number">28</div>
+        <h2>EXO-Hypermind Composites</h2>
+        <p class="subtitle">Condensing multimodal data into interpretable indices</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Screen Composite</h3>
+                <p><strong>Behavioral Intensity Score (0-100)</strong></p>
+                <p style="margin-top: 12px;">Aggregates screen-on duration, upload volume, and engagement streaks into a single digital behavior metric.</p>
+                <p style="margin-top: 12px;">High values indicate intense cognitive load and sustained attention demands.</p>
+            </div>
+            <div class="card">
+                <h3>Weather Composite</h3>
+                <p><strong>Environmental Load Index (0-100)</strong></p>
+                <p style="margin-top: 12px;">Combines temperature extremes, humidity, precipitation, and wind into an environmental stress score.</p>
+                <p style="margin-top: 12px;">Reflects external conditions that challenge physiological homeostasis.</p>
+            </div>
+            <div class="card">
+                <h3>Physio Composite</h3>
+                <p><strong>Normalized Physiological State (0-100)</strong></p>
+                <p style="margin-top: 12px;">Integrates heart rate, HRV, respiratory rate, and activity into a unified physiological index.</p>
+                <p style="margin-top: 12px;">Captures overall biological state independent of modality-specific fluctuations.</p>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 40px;">All three composites are <span class="highlight">scaled 0-100 for intuitive interpretation</span> and direct comparability</p>
+    </div>
+
+    <!-- Slide 29: Sequence Modeling -->
+    <div class="slide" id="slide29">
+        <div class="slide-number">29</div>
+        <h2>EXO-Ψ Sequence Modeling</h2>
+        <p class="subtitle">60-minute windows predicting next-minute physiology</p>
+        <div class="architecture-flow" style="flex-direction: column; gap: 20px;">
+            <div class="flow-item" style="width: 700px; max-width: 90%;">60-Minute Historical Window<br><small>Screen, Weather, Physio composites</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 700px; max-width: 90%;">LSTM Network<br><small>Temporal pattern recognition</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 700px; max-width: 90%;">Predicted Next-Minute Physio Composite<br><small>Expected physiological state</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 700px; max-width: 90%;">Prediction Error<br><small>|Predicted - Actual|</small></div>
+            <div class="flow-arrow" style="transform: rotate(90deg);">→</div>
+            <div class="flow-item" style="width: 700px; max-width: 90%;">EXO-Ψ Stability Score<br><small>Error → Stability transformation</small></div>
+        </div>
+        <p class="description" style="margin-top: 40px;">The model's predictive success or failure becomes a <span class="highlight">proxy for human system coherence</span></p>
+    </div>
+
+    <!-- Slide 30: Stability Index Calculation -->
+    <div class="slide alt" id="slide30">
+        <div class="slide-number">30</div>
+        <h2>EXO-Ψ Stability Index</h2>
+        <p class="subtitle">Transforming prediction error into interpretable scores</p>
+        <div class="process-box">
+            <h4>Score Calculation</h4>
+            <p>Prediction error is transformed into a 0-100 stability score through inverse scaling:</p>
+            <p style="margin-top: 16px; font-size: 18px;"><strong>Low Error → High Stability (approaching 100)</strong></p>
+            <p style="font-size: 18px;"><strong>High Error → Low Stability (approaching 0)</strong></p>
+        </div>
+        <div class="stats-container" style="margin-top: 50px;">
+            <div class="stat">
+                <div class="stat-number">100</div>
+                <div class="stat-label">Highly Predictable<br>Stable & Regular</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">50</div>
+                <div class="stat-label">Moderate Variability<br>Mixed Patterns</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Unpredictable<br>Irregular & Anomalous</div>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 50px;">This transformation makes the metric immediately interpretable: <span class="highlight">higher scores indicate physiological coherence</span>, lower scores flag disruption</p>
+    </div>
+
+    <!-- Slide 31: EMA Smoothing -->
+    <div class="slide" id="slide31">
+        <div class="slide-number">31</div>
+        <h2>EMA Smoothing Layers</h2>
+        <p class="subtitle">Revealing trends across multiple timescales</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>Fast EMA (30 minutes)</h3>
+                <p>Captures <strong>immediate stability shifts</strong> responding to acute stressors, sudden behavioral changes, or environmental transitions.</p>
+                <p style="margin-top: 16px;">Sensitive to real-time fluctuations, useful for alerting to rapid destabilization.</p>
+            </div>
+            <div class="column-content">
+                <h3>Slow EMA (4 hours)</h3>
+                <p>Reveals <strong>longer-term trends</strong> such as gradual sleep debt accumulation, sustained stress periods, or recovery trajectories.</p>
+                <p style="margin-top: 16px;">Filters out transient noise, highlighting persistent patterns in physiological stability.</p>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 50px;">The <span class="highlight">dual-EMA approach</span> allows users to distinguish between temporary disruptions and sustained stability shifts</p>
+    </div>
+
+    <!-- Slide 32: Dashboard Visualization -->
+    <div class="slide alt" id="slide32">
+        <div class="slide-number">32</div>
+        <h2>EXO-Ψ Dashboard</h2>
+        <p class="subtitle">Three-panel interpretive interface</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Panel 1: Stability Timeline</h3>
+                <p>EXO-Ψ score over time with fast and slow EMAs overlaid</p>
+                <p style="margin-top: 12px;">Visualizes stability trends, identifies disruption periods, and shows recovery dynamics</p>
+            </div>
+            <div class="card">
+                <h3>Panel 2: Composite Timelines</h3>
+                <p>Screen, Weather, and Physio composites plotted across the same timeframe</p>
+                <p style="margin-top: 12px;">Enables visual correlation between environmental/behavioral factors and stability changes</p>
+            </div>
+            <div class="card">
+                <h3>Panel 3: Correlation Scatter</h3>
+                <p>EXO-Ψ plotted against Screen and Weather composites</p>
+                <p style="margin-top: 12px;">Reveals relationships: Does high screen use correlate with instability? Does weather stress reduce predictability?</p>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 40px;">The dashboard transforms raw stability scores into <span class="highlight">actionable physiological insights</span></p>
+    </div>
+
+    <!-- Slide 33: EXO Results -->
+    <div class="slide" id="slide33">
+        <div class="slide-number">33</div>
+        <h2>EXO-Hypermind Results</h2>
+        <p class="subtitle">What stability patterns reveal about human state</p>
+        <ul class="feature-list">
+            <li><strong>High EXO-Ψ Periods:</strong> Stable physiological patterns during good sleep, moderate weather, balanced screen use—indicates robust homeostasis</li>
+            <li><strong>Low EXO-Ψ Periods:</strong> Irregularity during poor sleep, weather extremes, late-night screen binges—flags physiological disruption</li>
+            <li><strong>Sleep Quality Correlation:</strong> Strong inverse relationship between sleep debt and stability scores</li>
+            <li><strong>Weather Sensitivity:</strong> Temperature and humidity extremes consistently reduce predictability</li>
+            <li><strong>Screen Activity Impact:</strong> Intense screen sessions, especially before bed, correlate with decreased stability</li>
+            <li><strong>Early Warning System:</strong> Declining EXO-Ψ trends can signal emerging health or behavioral issues before subjective symptoms appear</li>
+        </ul>
+    </div>
+
+    <!-- Slide 34: Industry Applications -->
+    <div class="slide alt" id="slide34">
+        <div class="slide-number">34</div>
+        <h2>Industry Applications</h2>
+        <p class="subtitle">Real-world deployment scenarios</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Digital Health Monitoring</h3>
+                <p>Continuous physiological stability tracking for chronic disease management and preventive care</p>
+            </div>
+            <div class="card">
+                <h3>Workplace Wellness</h3>
+                <p>Employee stress and burnout detection through behavioral and physiological integration</p>
+            </div>
+            <div class="card">
+                <h3>Sports & Athletics</h3>
+                <p>Athlete recovery monitoring and readiness scoring for optimal training periodization</p>
+            </div>
+            <div class="card">
+                <h3>Consumer Wearables</h3>
+                <p>Readiness scores similar to Oura Ring, Whoop, and Apple Watch recovery metrics</p>
+            </div>
+            <div class="card">
+                <h3>Behavior-Aware Therapeutics</h3>
+                <p>Timing interventions based on physiological stability windows for maximum efficacy</p>
+            </div>
+            <div class="card">
+                <h3>Cognitive Load Mapping</h3>
+                <p>Productivity optimization by identifying periods of physiological and cognitive readiness</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 35: Industry Credibility -->
+    <div class="slide" id="slide35">
+        <div class="slide-number">35</div>
+        <h2>EXO-Hypermind Credibility</h2>
+        <p class="subtitle">Alignment with established health metrics</p>
+        <div class="two-column">
+            <div class="column-content">
+                <h3>Similar Frameworks</h3>
+                <p>EXO-Hypermind shares conceptual DNA with:</p>
+                <ul style="margin-top: 16px;">
+                    <li>Oura Ring's Readiness Score</li>
+                    <li>Whoop's Recovery metric</li>
+                    <li>Apple Watch's Training Load</li>
+                    <li>HRV-based stress indices</li>
+                    <li>Sleep quality scoring systems</li>
+                </ul>
+            </div>
+            <div class="column-content">
+                <h3>Unique Advantages</h3>
+                <p>What sets EXO-Ψ apart:</p>
+                <ul style="margin-top: 16px;">
+                    <li>Multimodal integration (not just physiology)</li>
+                    <li>Behavioral context awareness</li>
+                    <li>Environmental conditioning</li>
+                    <li>Minute-level granularity</li>
+                    <li>Interpretable stability framework</li>
+                </ul>
+            </div>
+        </div>
+        <p class="description" style="margin-top: 50px;">EXO-Hypermind represents an <span class="highlight">interpretable, deployable</span> metric suitable for commercial wellness platforms</p>
+    </div>
+
+    <!-- Slide 36: Technical Achievements -->
+    <div class="slide alt" id="slide36">
+        <div class="slide-number">36</div>
+        <h2>Technical Achievements</h2>
+        <p class="subtitle">What this project delivers</p>
+        <ul class="feature-list">
+            <li><strong>Robust Data Pipeline:</strong> End-to-end acquisition, parsing, and synchronization of multimodal streams</li>
+            <li><strong>Minute-Level Dataset:</strong> Complete temporal coverage across 35 days with 63+ features</li>
+            <li><strong>Advanced Deep Learning:</strong> Two sophisticated architectures (LSTM, Hybrid CNN+Transformer+LSTM)</li>
+            <li><strong>Novel Interpretive Framework:</strong> EXO-Hypermind stability index with industry applicability</li>
+            <li><strong>Feature Engineering:</strong> 20+ derived variables capturing temporal, behavioral, and environmental context</li>
+            <li><strong>Scalable Architecture:</strong> Framework extensible to additional data sources and prediction tasks</li>
+        </ul>
+    </div>
+
+    <!-- Slide 37: Future Directions -->
+    <div class="slide" id="slide37">
+        <div class="slide-number">37</div>
+        <h2>Future Opportunities</h2>
+        <p class="subtitle">Extending the multimodal human state modeling framework</p>
+        <div class="content-grid">
+            <div class="card">
+                <h3>Personalization</h3>
+                <p>User-specific model fine-tuning to capture individual physiological signatures and behavioral patterns</p>
+            </div>
+            <div class="card">
+                <h3>Anomaly Detection</h3>
+                <p>Automated identification of irregular patterns suggesting health events or emerging conditions</p>
+            </div>
+            <div class="card">
+                <h3>Chronobiology Research</h3>
+                <p>Deep analysis of circadian rhythms and their interaction with behavior and environment</p>
+            </div>
+            <div class="card">
+                <h3>Behavioral Interventions</h3>
+                <p>Just-in-time adaptive interventions triggered by stability drops or predicted disruptions</p>
+            </div>
+            <div class="card">
+                <h3>Digital Therapeutics</h3>
+                <p>Integration into therapeutic protocols for mental health, sleep disorders, and chronic disease</p>
+            </div>
+            <div class="card">
+                <h3>Population Analytics</h3>
+                <p>Aggregated stability trends across cohorts for public health and wellness insights</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 38: Conclusion -->
+    <div class="slide alt" id="slide38">
+        <div class="slide-number">38</div>
+        <div class="hero-accent">CONCLUSION</div>
+        <h1>The Future of<br>Human State Modeling</h1>
+        <p class="subtitle">Comprehensive multimodal fusion for health, behavior, and environmental analytics</p>
+        <ul class="feature-list" style="margin-top: 50px;">
+            <li>Multimodal integration unlocks rich human modeling capabilities</li>
+            <li>Deep learning architectures uncover hidden physiological dynamics</li>
+            <li>EXO-Hypermind provides actionable, interpretable stability insights</li>
+            <li>Framework demonstrates strong industry alignment and commercial viability</li>
+            <li>Foundation established for next-generation human-centered AI systems</li>
+        </ul>
+        <p class="description" style="margin-top: 60px; font-size: 20px;">This work represents a <span class="highlight">comprehensive approach</span> to understanding human state through the fusion of wearable biosignals, digital behavior, and environmental context</p>
+        <p class="presenter" style="margin-top: 50px;">Thank you | Chintan N. Ruparel</p>
+    </div>
+
+<script>
+/* ------------------------------
+   BASIC SLIDE STATE
+--------------------------------*/
+let currentSlide = 1;
+const slides = document.querySelectorAll(".slide");
+const totalSlides = slides.length;
+
+document.getElementById("totalSlideNum").textContent = totalSlides;
+
+/* ------------------------------
+   CORE FUNCTIONS
+--------------------------------*/
+function showSlide(n) {
+    // Clamp slide index
+    if (n < 1) n = 1;
+    if (n > totalSlides) n = totalSlides;
+
+    currentSlide = n;
+
+    // Hide all slides
+    slides.forEach((slide) => (slide.style.display = "none"));
+
+    // Show current slide
+    slides[currentSlide - 1].style.display = "flex";
+
+    // Update UI text
+    document.getElementById("currentSlideNum").textContent = currentSlide;
+
+    // Enable/disable buttons
+    document.getElementById("prevBtn").disabled = currentSlide === 1;
+    document.getElementById("nextBtn").disabled = currentSlide === totalSlides;
+}
+
+function nextSlide() {
+    showSlide(currentSlide + 1);
+}
+
+function previousSlide() {
+    showSlide(currentSlide - 1);
+}
+
+/* ------------------------------
+   KEYBOARD NAVIGATION
+--------------------------------*/
+document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") nextSlide();
+    if (e.key === "ArrowLeft") previousSlide();
+});
+
+/* ------------------------------
+   TOUCH SWIPE SUPPORT
+--------------------------------*/
+let touchStartX = 0;
+
+document.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener("touchend", (e) => {
+    let diff = e.changedTouches[0].screenX - touchStartX;
+    if (diff < -50) nextSlide();
+    if (diff > 50) previousSlide();
+});
+
+/* ------------------------------
+   INITIALIZE
+--------------------------------*/
+showSlide(1);
+</script>
