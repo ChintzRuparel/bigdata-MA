@@ -391,12 +391,11 @@
     <div class="navigation">
         <button class="nav-btn" id="prevBtn" onclick="previousSlide()">← Previous</button>
         <div class="slide-indicator">
-            <span id="currentSlideNum">1</span> / <span id="totalSlideNum">16</span>
+            <span id="currentSlideNum">1</span> / <span id="totalSlideNum">17</span>
         </div>
         <button class="nav-btn" id="nextBtn" onclick="nextSlide()">Next →</button>
     </div>
 
-    <!-- Slide 1: Title -->
     <div class="slide" id="slide1">
         <div class="slide-number">01</div>
         <div class="hero-accent">BIG DATA MANAGEMENT PROJECT</div>
@@ -404,7 +403,6 @@
         <p class="presenter">Presented by Chintan N. Ruparel & Shabad Vaswani</p>
     </div>
 
-    <!-- Slide 2: Motivation -->
     <div class="slide alt" id="slide2">
         <div class="slide-number">02</div>
         <h2>Motivation: Why Multimodal Modeling Matters</h2>
@@ -424,13 +422,12 @@
         </div>
     </div>
 
-    <!-- Slide 3: Data Pipeline Overview -->
     <div class="slide" id="slide3">
         <div class="slide-number">03</div>
         <h2>Data Acquisition Pipeline</h2>
         <p class="subtitle">Three independent streams unified into minute-level timeline</p>
         <div class="architecture-flow">
-            <div class="flow-item">Apple Health<br><small>XML Export</small></div>
+            <div class="flow-item">Apple Health/Garmin Connect<br><small>XML/FIT Export</small></div>
             <div class="flow-arrow">→</div>
             <div class="flow-item">RouteSense<br><small>Network Data</small></div>
             <div class="flow-arrow">→</div>
@@ -440,7 +437,6 @@
         </div>
     </div>
 
-    <!-- Slide 4: Apple Health Data -->
     <div class="slide alt" id="slide4">
         <div class="slide-number">04</div>
         <h2>Apple Health Data</h2>
@@ -458,9 +454,22 @@
         <p class="description" style="margin-top: 40px;">Irregular sampling frequencies require normalization to minute boundaries</p>
     </div>
 
-    <!-- Slide 5: RouteSense -->
     <div class="slide" id="slide5">
         <div class="slide-number">05</div>
+        <h2>Garmin Health Data</h2>
+        <p class="subtitle">5 physiological metrics</p>
+        <div style="margin-top: 40px;">
+            <span class="metric-badge">Heart Rate</span>
+            <span class="metric-badge">Stress</span>
+            <span class="metric-badge">Body Battery</span>
+            <span class="metric-badge">Sleep</span>
+            <span class="metric-badge">Step Count</span>
+        </div>
+            <p class="description" style="margin-top: 40px;">Provides high-resolution recovery metrics (Body Battery) and HRV-based stress monitoring to complement the dataset.</p>    
+    </div>
+
+    <div class="slide" id="slide6">
+        <div class="slide-number">06</div>
         <h2>RouteSense Screen Detection</h2>
         <p class="subtitle">Behavioral inference from network patterns</p>
         <div class="two-column">
@@ -477,9 +486,8 @@
         </div>
     </div>
 
-    <!-- Slide 6: Weather Data -->
-    <div class="slide alt" id="slide6">
-        <div class="slide-number">06</div>
+    <div class="slide alt" id="slide7">
+        <div class="slide-number">07</div>
         <h2>Weather Data Integration</h2>
         <p class="subtitle">Environmental context from Open-Meteo API</p>
         <div style="margin-top: 40px;">
@@ -493,9 +501,8 @@
         <p class="description">Weather affects heart rate, mood, sleep, and performance</p>
     </div>
 
-    <!-- Slide 7: Unified Dataset -->
-    <div class="slide" id="slide7">
-        <div class="slide-number">07</div>
+    <div class="slide" id="slide8">
+        <div class="slide-number">08</div>
         <h2>Unified Timeline Dataset</h2>
         <p class="subtitle">Complete minute-by-minute coverage</p>
         <div class="stats-container">
@@ -528,9 +535,8 @@
         </div>
     </div>
 
-    <!-- Slide 8: Feature Engineering -->
-    <div class="slide alt" id="slide8">
-        <div class="slide-number">08</div>
+    <div class="slide alt" id="slide9">
+        <div class="slide-number">09</div>
         <h2>Feature Engineering</h2>
         <p class="subtitle">Expanding predictive power</p>
         <div class="content-grid">
@@ -553,9 +559,8 @@
         </div>
     </div>
 
-    <!-- Slide 9: LSTM Model -->
-    <div class="slide" id="slide9">
-        <div class="slide-number">09</div>
+    <div class="slide" id="slide10">
+        <div class="slide-number">10</div>
         <h2>LSTM Model</h2>
         <p class="subtitle">Predicting next-minute average heart rate</p>
         <ul class="feature-list">
@@ -567,9 +572,8 @@
         </ul>
     </div>
 
-    <!-- Slide 10: Hybrid Model -->
-    <div class="slide alt" id="slide10">
-        <div class="slide-number">10</div>
+    <div class="slide alt" id="slide11">
+        <div class="slide-number">11</div>
         <h2>Hybrid CNN + Transformer + LSTM</h2>
         <p class="subtitle">Resting heart rate prediction</p>
         <div class="content-grid">
@@ -589,9 +593,8 @@
         <p class="description" style="margin-top: 40px;">Three parallel branches fused for robust RHR estimation</p>
     </div>
 
-    <!-- Slide 11: Model Results -->
-    <div class="slide" id="slide11">
-        <div class="slide-number">11</div>
+    <div class="slide" id="slide12">
+        <div class="slide-number">12</div>
         <h2>Model Results</h2>
         <p class="subtitle">Capturing physiological dynamics</p>
         <ul class="feature-list">
@@ -604,9 +607,8 @@
         </ul>
     </div>
 
-    <!-- Slide 12: EXO-Hypermind Introduction -->
-    <div class="slide alt" id="slide12">
-        <div class="slide-number">12</div>
+    <div class="slide alt" id="slide13">
+        <div class="slide-number">13</div>
         <div class="hero-accent">INTRODUCING</div>
         <h1>EXO-Hypermind</h1>
         <p class="subtitle">Quantifying physiological predictability</p>
@@ -614,9 +616,8 @@
         <p class="description" style="margin-top: 30px;">Transforms prediction error into a <span class="highlight">stability score (0-100)</span></p>
     </div>
 
-    <!-- Slide 13: EXO-Ψ Framework -->
-    <div class="slide" id="slide13">
-        <div class="slide-number">13</div>
+    <div class="slide" id="slide14">
+        <div class="slide-number">14</div>
         <h2>EXO-Ψ Stability Score</h2>
         <p class="subtitle">From prediction to interpretable health metric</p>
         <div class="stats-container">
@@ -636,9 +637,8 @@
         <p class="description" style="margin-top: 50px;">Dual EMA smoothing: Fast (30 min) for acute changes, Slow (4 hours) for trends</p>
     </div>
 
-    <!-- Slide 14: EXO-Hypermind Composites -->
-    <div class="slide" id="slide14">
-        <div class="slide-number">14</div>
+    <div class="slide" id="slide15">
+        <div class="slide-number">15</div>
         <h2>EXO-Hypermind Composites</h2>
         <p class="subtitle">Three behavioral-environmental indices (0-100)</p>
         <div class="content-grid">
@@ -661,9 +661,8 @@
         <p class="description" style="margin-top: 50px;">60-minute windows of composites predict next-minute physiology → error becomes stability score</p>
     </div>
 
-    <!-- Slide 15: Applications & Industry -->
-    <div class="slide alt" id="slide15">
-        <div class="slide-number">15</div>
+    <div class="slide alt" id="slide16">
+        <div class="slide-number">16</div>
         <h2>Industry Applications</h2>
         <div class="content-grid">
             <div class="card">
@@ -685,9 +684,8 @@
         </div>
     </div>
 
-    <!-- Slide 16: Conclusion -->
-    <div class="slide" id="slide16">
-        <div class="slide-number">16</div>
+    <div class="slide" id="slide17">
+        <div class="slide-number">17</div>
         <div class="hero-accent">CONCLUSION</div>
         <h1>Key Takeaways</h1>
         <ul class="feature-list" style="margin-top: 50px;">
